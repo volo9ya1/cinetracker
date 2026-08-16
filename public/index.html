@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="siteTitle">CineTracker</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- OneSignal Push Notifications SDK -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="app-avatar"><img src="avatar.png" alt="Logo"></div>
+      <div class="logo-text">CineTracker</div>
+    </div>
+
+    <div class="controls">
+      <input type="text" id="search" data-i18n-placeholder="searchPlaceholder" placeholder="Поиск...">
+      
+      <!-- Фильтр типа: Фильмы / Сериалы -->
+      <select id="type">
+        <option value="all" data-i18n="allTypes">Все типы</option>
+        <option value="movie" data-i18n="typeMovie">Фильмы</option>
+        <option value="series" data-i18n="typeSeries">Сериалы</option>
+      </select>
+
+      <!-- Фильтр категорий -->
+      <select id="category">
+        <option value="all" data-i18n="allCategories">Все Вселенные</option>
+        <option value="favorites" data-i18n="favoritesCategory">⭐ Избранное</option>
+        <option value="marvel">Marvel</option>
+        <option value="dc">DC</option>
+        <option value="sts">СТС</option>
+        <option value="tnt">ТНТ</option>
+      </select>
+
+      <!-- Сортировка -->
+      <select id="sort">
+        <option value="date_desc" data-i18n="sortNewest">Новые первые</option>
+        <option value="date_asc" data-i18n="sortOldest">Старые первые</option>
+        <option value="title" data-i18n="sortAlpha">По алфавиту</option>
+      </select>
+
+      <!-- Выбор языка -->
+      <select id="language">
+        <option value="ru">Русский 🇷🇺</option>
+        <option value="en">English 🇬🇧</option>
+        <option value="uz">O'zbekcha 🇺🇿</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <!-- Таймер обратного отсчета -->
+    <div id="countdown-banner" class="countdown-banner"></div>
+
+    <!-- Сетка с карточками -->
+    <div class="grid" id="container"></div>
+  </main>
+
+  <!-- Футер с контактами и соглашением -->
+  <footer>
+    <div class="footer-content">
+      <div class="contacts">
+        <span data-i18n="contactsTitle">Связаться с нами:</span>
+        <a href="https://t.me/username1" target="_blank" rel="noopener" class="social-link tg">Telegram 1</a>
+        <a href="https://t.me/username2" target="_blank" rel="noopener" class="social-link tg">Telegram 2</a>
+        <a href="https://instagram.com/username" target="_blank" rel="noopener" class="social-link ig">Instagram</a>
+      </div>
+      <div class="terms-link-box">
+        <a href="#terms" id="open-terms" data-i18n="termsLink">Пользовательское соглашение</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Баннер пользовательского соглашения -->
+  <div id="terms-banner" class="terms-banner hidden">
+    <div class="terms-text" data-i18n="termsText">
+      Используя данный сайт, вы соглашаетесь с <a href="#terms">пользовательским соглашением</a>.
+    </div>
+    <button id="accept-terms" class="btn-accept" data-i18n="acceptBtn">Принять</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
