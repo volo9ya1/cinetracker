@@ -1,264 +1,117 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+// Инициализация OneSignal Web SDK
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+OneSignalDeferred.push(async function(OneSignal) {
+  await OneSignal.init({
+    appId: "e92a5c5e-ddf4-4cd1-b88a-e7c3d11155f3",
+  });
+});
+
+// Ключевые слова для фильтров киновселенных
+const CATEGORY_QUERIES = {
+  marvel: 'Marvel',
+  dc: 'Batman',
+  sts: 'Kitchen',
+  tnt: 'Interns'
+};
+
+// Переводы интерфейса
+const translations = {
+  ru: {
+    siteTitle: 'CineTracker',
+    searchPlaceholder: 'Поиск...',
+    allTypes: 'Все типы',
+    typeMovie: 'Фильмы',
+    typeSeries: 'Сериалы',
+    allCategories: 'Все Вселенные',
+    favoritesCategory: '⭐ Избранное',
+    sortNewest: 'Новые первые',
+    sortOldest: 'Старые первые',
+    sortAlpha: 'По алфавиту',
+    contactsTitle: 'Связаться с нами:',
+    termsLink: 'Пользовательское соглашение',
+    termsText: 'Используя данный сайт, вы соглашаетесь с <a href="terms.html" target="_blank">пользовательским соглашением</a>.',
+    acceptBtn: 'Принять',
+    notFound: 'Ничего не найдено.',
+    countdownText: '⏳ Премьера «Avengers: Secret Wars»:'
+  },
+  en: {
+    siteTitle: 'CineTracker',
+    searchPlaceholder: 'Search...',
+    allTypes: 'All types',
+    typeMovie: 'Movies',
+    typeSeries: 'Series',
+    allCategories: 'All Universes',
+    favoritesCategory: '⭐ Favorites',
+    sortNewest: 'Newest first',
+    sortOldest: 'Oldest first',
+    sortAlpha: 'Alphabetical',
+    contactsTitle: 'Contact us:',
+    termsLink: 'Terms of Service',
+    termsText: 'By using this site, you agree to the <a href="terms.html" target="_blank">Terms of Service</a>.',
+    acceptBtn: 'Accept',
+    notFound: 'Nothing found.',
+    countdownText: '⏳ "Avengers: Secret Wars" premiere in:'
+  },
+  uz: {
+    siteTitle: 'CineTracker',
+    searchPlaceholder: 'Qidiruv...',
+    allTypes: 'Barcha turlar',
+    typeMovie: 'Filmlar',
+    typeSeries: 'Seriallar',
+    allCategories: 'Barcha Olamlar',
+    favoritesCategory: '⭐ Saralanganlar',
+    sortNewest: 'Eng yangilar',
+    sortOldest: 'Eng eski',
+    sortAlpha: 'Alifbo bo‘yicha',
+    contactsTitle: 'Biz bilan bog‘lanish:',
+    termsLink: 'Foydalanish shartlari',
+    termsText: 'Ushbu saytdan foydalanib, siz <a href="terms.html" target="_blank">foydalanish shartlariga</a> rozi bo‘lasiz.',
+    acceptBtn: 'Qabul qilish',
+    notFound: 'Hech narsa topilmadi.',
+    countdownText: '⏳ "Avengers: Secret Wars" premerasiga:'
+  }
+};
+
+let currentLang = 'ru';
+let moviesData = [];
+
+// Элементы DOM
+const searchInput = document.getElementById('search');
+const typeSelect = document.getElementById('type');
+const categorySelect = document.getElementById('category');
+const sortSelect = document.getElementById('sort');
+const langSelect = document.getElementById('language');
+const container = document.getElementById('container');
+const countdownBanner = document.getElementById('countdown-banner');
+const termsBanner = document.getElementById('terms-banner');
+const acceptTermsBtn = document.getElementById('accept-terms');
+
+// Таймер обратного отсчета
+function startCountdown() {
+  const targetDate = new Date('2027-05-07T00:00:00').getTime();
+  
+  setInterval(() => {
+    const now = new Date().getTime();
+    const diff = targetDate - now;
+
+    if (!countdownBanner) return;
+
+    if (diff <= 0) {
+      countdownBanner.textContent = 'Премьера состоялась!';
+      return;
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+    const prefix = translations[currentLang].countdownText;
+    countdownBanner.innerHTML = `${prefix} <strong>${days}д ${hours}ч ${minutes}м ${seconds}с</strong>`;
+  }, 1000);
 }
 
-body {
-  background-color: #0f172a;
-  color: #f8fafc;
-  min-height: 100vh;
-  padding-bottom: 40px;
-}
-
-/* Шапка и фильтры */
-header {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 32px;
-  background-color: #1e293b;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  gap: 16px;
-}
-
-.logo {
-  font-size: 1.6rem;
-  font-weight: bold;
-  color: #38bdf8;
-}
-
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-}
-
-input[type="text"], select {
-  background-color: #0f172a;
-  color: #f8fafc;
-  border: 1px solid #334155;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-input[type="text"]:focus, select:focus {
-  border-color: #38bdf8;
-}
-
-/* Баннер обратного отсчета */
-#countdown-banner {
-  margin: 20px 32px;
-  padding: 12px 20px;
-  background: linear-gradient(90deg, #2563eb, #7c3aed);
-  border-radius: 8px;
-  text-align: center;
-  font-size: 1.05rem;
-  color: #ffffff;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
-}
-
-/* Сетка карточек */
-#container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 24px;
-  padding: 0 32px;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.empty-msg {
-  grid-column: 1 / -1;
-  text-align: center;
-  font-size: 1.2rem;
-  color: #94a3b8;
-  padding: 40px 0;
-}
-
-/* Карточки */
-.card {
-  background-color: #1e293b;
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-}
-
-/* Оверлей карточки и изображения */
-.card-img-wrap {
-  position: relative;
-  width: 100%;
-  height: 330px;
-  overflow: hidden;
-  background-color: #0f172a;
-}
-
-.card-img-wrap img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.card-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(15, 23, 42, 0.94);
-  color: #e2e8f0;
-  padding: 16px;
-  box-sizing: border-box;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.card:hover .card-overlay {
-  opacity: 1;
-}
-
-.card-description {
-  font-size: 0.85rem;
-  line-height: 1.4;
-  margin: 0;
-  overflow-y: auto;
-  max-height: 220px;
-}
-
-/* Кнопки ссылок в оверлее */
-.card-links {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-  width: 100%;
-}
-
-.link-btn {
-  flex: 1;
-  padding: 8px 0;
-  text-align: center;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: bold;
-  text-decoration: none;
-  transition: background 0.2s ease, transform 0.1s;
-}
-
-.link-btn:active {
-  transform: scale(0.97);
-}
-
-.imdb-btn {
-  background: #f5c518;
-  color: #000;
-}
-
-.imdb-btn:hover {
-  background: #e2b616;
-}
-
-.trailer-btn {
-  background: #ff0000;
-  color: #fff;
-}
-
-.trailer-btn:hover {
-  background: #cc0000;
-}
-
-/* Инфо-блок карточки */
-.card-info {
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  position: relative;
-  flex-grow: 1;
-}
-
-.card-info h3 {
-  font-size: 0.95rem;
-  color: #f8fafc;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.card-info p {
-  font-size: 0.8rem;
-  color: #94a3b8;
-}
-
-.fav-btn {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  color: #64748b;
-  font-size: 1.3rem;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.fav-btn.active, .fav-btn:hover {
-  color: #f59e0b;
-}
-
-/* Плашка соглашения */
-#terms-banner {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background-color: #1e293b;
-  border-top: 1px solid #334155;
-  padding: 12px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  z-index: 1000;
-}
-
-#terms-banner.hidden {
-  display: none;
-}
-
-#terms-banner a {
-  color: #38bdf8;
-}
-
-#accept-terms {
-  background-color: #0284c7;
-  color: #fff;
-  border: none;
-  padding: 6px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-#accept-terms:hover {
-  background-color: #0369a1;
-}
-// Отрисовка карточек-заглушек во время загрузки
+// Отрисовка скелетона
 function renderSkeletons(count = 8) {
   if (!container) return;
   container.innerHTML = '';
@@ -276,10 +129,10 @@ function renderSkeletons(count = 8) {
   }
 }
 
-// Загрузка данных с вызовом скелетона
+// Загрузка данных с сервера
 async function fetchMovies(query = 'Marvel', type = 'all', category = 'marvel') {
   try {
-    renderSkeletons(8); // Показываем 8 мерцающих карточек перед получением ответа
+    renderSkeletons(8);
 
     let url = `/api/movies?s=${encodeURIComponent(query)}`;
     if (type && type !== 'all') url += `&type=${type}`;
@@ -300,3 +153,167 @@ async function fetchMovies(query = 'Marvel', type = 'all', category = 'marvel') 
     if (container) container.innerHTML = `<p class="empty-msg">${translations[currentLang].notFound}</p>`;
   }
 }
+
+// Сортировка по датам
+function applySortingAndRender() {
+  let sorted = [...moviesData];
+  const sortValue = sortSelect ? sortSelect.value : 'newest';
+
+  const parseYearOrDate = (dateStr) => {
+    if (!dateStr) return 0;
+    const timestamp = Date.parse(dateStr);
+    if (!isNaN(timestamp)) return timestamp;
+    const yearMatch = String(dateStr).match(/\d{4}/);
+    return yearMatch ? parseInt(yearMatch[0], 10) : 0;
+  };
+
+  if (sortValue === 'newest') {
+    sorted.sort((a, b) => parseYearOrDate(b.date) - parseYearOrDate(a.date));
+  } else if (sortValue === 'oldest') {
+    sorted.sort((a, b) => parseYearOrDate(a.date) - parseYearOrDate(b.date));
+  } else if (sortValue === 'alpha') {
+    sorted.sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  renderCards(sorted);
+}
+
+// Отрисовка карточек
+function renderCards(list) {
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (!list || list.length === 0) {
+    container.innerHTML = `<p class="empty-msg">${translations[currentLang].notFound}</p>`;
+    return;
+  }
+
+  const favorites = JSON.parse(localStorage.getItem('fav_movies') || '[]');
+
+  list.forEach(item => {
+    const isFav = favorites.includes(item.id);
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-img-wrap">
+        <img src="${item.poster}" alt="${item.title}">
+        <div class="card-overlay">
+          <p class="card-description">${item.description || 'Описание отсутствует.'}</p>
+          <div class="card-links">
+            <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="link-btn imdb-btn">IMDb</a>
+            <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(item.title + ' трейлер')}" target="_blank" rel="noopener noreferrer" class="link-btn trailer-btn">Трейлер</a>
+          </div>
+        </div>
+      </div>
+      <div class="card-info">
+        <h3>${item.title}</h3>
+        <p>${item.date} | ${item.type} | ⭐ ${item.rating}</p>
+        <button class="fav-btn ${isFav ? 'active' : ''}" data-id="${item.id}">
+          ${isFav ? '★' : '☆'}
+        </button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+// Перевод интерфейса
+function setLanguage(lang) {
+  currentLang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (translations[lang] && translations[lang][key]) {
+      el.innerHTML = translations[lang][key];
+    }
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (translations[lang] && translations[lang][key]) {
+      el.placeholder = translations[lang][key];
+    }
+  });
+}
+
+function triggerFetch() {
+  const cat = categorySelect ? categorySelect.value : 'marvel';
+  const query = (searchInput && searchInput.value.trim()) || CATEGORY_QUERIES[cat] || 'Marvel';
+  const type = typeSelect ? typeSelect.value : 'all';
+  fetchMovies(query, type, cat);
+}
+
+function renderFavorites() {
+  const favorites = JSON.parse(localStorage.getItem('fav_movies') || '[]');
+  const favItems = moviesData.filter(m => favorites.includes(m.id));
+  renderCards(favItems);
+}
+
+// Слушатели событий
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    const val = e.target.value.trim();
+    if (val.length > 2) {
+      const typeVal = typeSelect ? typeSelect.value : 'all';
+      const catVal = categorySelect ? categorySelect.value : 'marvel';
+      fetchMovies(val, typeVal, catVal);
+    }
+  });
+}
+
+if (typeSelect) {
+  typeSelect.addEventListener('change', triggerFetch);
+}
+
+if (categorySelect) {
+  categorySelect.addEventListener('change', (e) => {
+    if (e.target.value === 'favorites') {
+      renderFavorites();
+    } else {
+      triggerFetch();
+    }
+  });
+}
+
+if (sortSelect) {
+  sortSelect.addEventListener('change', applySortingAndRender);
+}
+
+if (container) {
+  container.addEventListener('click', (e) => {
+    if (e.target.classList.contains('fav-btn')) {
+      const id = e.target.getAttribute('data-id');
+      let favorites = JSON.parse(localStorage.getItem('fav_movies') || '[]');
+      
+      if (favorites.includes(id)) {
+        favorites = favorites.filter(favId => favId !== id);
+      } else {
+        favorites.push(id);
+      }
+      
+      localStorage.setItem('fav_movies', JSON.stringify(favorites));
+      
+      if (categorySelect && categorySelect.value === 'favorites') {
+        renderFavorites();
+      } else {
+        applySortingAndRender();
+      }
+    }
+  });
+}
+
+if (termsBanner && !localStorage.getItem('terms_accepted')) {
+  termsBanner.classList.remove('hidden');
+}
+
+if (acceptTermsBtn) {
+  acceptTermsBtn.addEventListener('click', () => {
+    localStorage.setItem('terms_accepted', 'true');
+    if (termsBanner) termsBanner.classList.add('hidden');
+  });
+}
+
+if (langSelect) {
+  langSelect.addEventListener('change', (e) => setLanguage(e.target.value));
+}
+
+startCountdown();
+fetchMovies('Marvel', 'all', 'marvel');
