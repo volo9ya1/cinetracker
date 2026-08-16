@@ -2,17 +2,18 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Замените на ваш бесплатный ключ с omdbapi.com
-const OMDB_API_KEY = 'P4P824V-QXF409N-J5CMCYF-ST8RM2A';
+// Замените этот ключ на ваш 8-значный ключ с omdbapi.com (например, 'a1b2c3d4')
+const OMDB_API_KEY = process.env.OMDB_API_KEY || 'P4P824V-QXF409N-J5CMCYF-ST8RM2A';
 
 app.use(express.static('public'));
 
 app.get('/api/movies', async (req, res) => {
-  const { category, search, type } = req.query;
+  // Принимаем как req.query.search, так и req.query.s
+  const { category, search, s, type } = req.query;
 
   try {
-    let query = search || 'Marvel';
-    if (!search && category && category !== 'all' && category !== 'favorites') {
+    let query = search || s || 'Marvel';
+    if (!search && !s && category && category !== 'all' && category !== 'favorites') {
       query = category;
     }
 
@@ -22,8 +23,10 @@ app.get('/api/movies', async (req, res) => {
     const searchRes = await fetch(searchUrl);
     const searchData = await searchRes.json();
 
+    // Если OMDb вернул ошибку, выводим её в консоль сервера
     if (searchData.Response === 'False') {
-      return res.json({ items: [] });
+      console.error('Ошибка от OMDb API:', searchData.Error);
+      return res.json({ items: [], error: searchData.Error });
     }
 
     // Запрашиваем подробную информацию по каждому найденному объекту
@@ -58,5 +61,5 @@ app.get('/api/movies', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`CineTracker запущен на http://localhost:${PORT}`);
+  console.log(`CineTracker запущен на порту ${PORT}`);
 });
