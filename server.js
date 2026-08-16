@@ -3,7 +3,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Замените этот ключ на ваш 8-значный ключ с omdbapi.com (например, 'a1b2c3d4')
-const OMDB_API_KEY = process.env.OMDB_API_KEY || 'P4P824V-QXF409N-J5CMCYF-ST8RM2A';
+const OMDB_API_KEY = process.env.OMDB_API_KEY || '1018c53f';
 
 app.use(express.static('public'));
 
