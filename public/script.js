@@ -227,3 +227,9 @@ sortSelect.addEventListener('change', render);
 // Инициализация
 initCountdown('2027-05-07', 'Avengers: Secret Wars');
 render();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js');
+  });
+}
