@@ -258,3 +258,110 @@ input[type="text"]:focus, select:focus {
 #accept-terms:hover {
   background-color: #0369a1;
 }
+/* ==========================================
+   Скелетон-загрузчик (Skeleton Loader)
+   ========================================== */
+.skeleton-card {
+  background-color: #1e293b;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 410px;
+  display: flex;
+  flex-direction: column;
+}
+
+.skeleton-img {
+  width: 100%;
+  height: 330px;
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+.skeleton-info {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-line {
+  height: 12px;
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ==========================================
+   Адаптивность для планшетов и телефонов
+   ========================================== */
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+
+  .controls {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .controls input[type="text"],
+  .controls select {
+    width: 100%;
+  }
+
+  #countdown-banner {
+    margin: 16px;
+    font-size: 0.9rem;
+  }
+
+  #container {
+    padding: 0 16px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 16px;
+  }
+
+  .card-img-wrap {
+    height: 240px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo {
+    text-align: center;
+  }
+
+  #container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .card-overlay {
+    padding: 8px;
+  }
+
+  .card-description {
+    font-size: 0.75rem;
+  }
+
+  .link-btn {
+    font-size: 0.7rem;
+    padding: 6px 0;
+  }
+}
