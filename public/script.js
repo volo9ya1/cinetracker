@@ -1,4 +1,4 @@
-// Инициализация OneSignal
+// Инициализация OneSignal Web SDK
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
   await OneSignal.init({
@@ -6,7 +6,7 @@ OneSignalDeferred.push(async function(OneSignal) {
   });
 });
 
-// Ключевые запросы для вселенных
+// Ключевые слова для фильтров киновселенных
 const CATEGORY_QUERIES = {
   marvel: 'Marvel',
   dc: 'Batman',
@@ -75,7 +75,7 @@ const translations = {
 let currentLang = 'ru';
 let moviesData = [];
 
-// DOM элементы
+// Элементы DOM
 const searchInput = document.getElementById('search');
 const typeSelect = document.getElementById('type');
 const categorySelect = document.getElementById('category');
@@ -111,7 +111,7 @@ function startCountdown() {
   }, 1000);
 }
 
-// Запрос к бэкенду
+// Загрузка данных с сервера
 async function fetchMovies(query = 'Marvel', type = 'all', category = 'marvel') {
   try {
     let url = `/api/movies?s=${encodeURIComponent(query)}`;
@@ -134,15 +134,23 @@ async function fetchMovies(query = 'Marvel', type = 'all', category = 'marvel') 
   }
 }
 
-// Сортировка данных
+// Корректная парсинг-сортировка дат и лет
 function applySortingAndRender() {
   let sorted = [...moviesData];
   const sortValue = sortSelect ? sortSelect.value : 'newest';
 
+  const parseYearOrDate = (dateStr) => {
+    if (!dateStr) return 0;
+    const timestamp = Date.parse(dateStr);
+    if (!isNaN(timestamp)) return timestamp;
+    const yearMatch = String(dateStr).match(/\d{4}/);
+    return yearMatch ? parseInt(yearMatch[0], 10) : 0;
+  };
+
   if (sortValue === 'newest') {
-    sorted.sort((a, b) => parseInt(b.date) - parseInt(a.date));
+    sorted.sort((a, b) => parseYearOrDate(b.date) - parseYearOrDate(a.date));
   } else if (sortValue === 'oldest') {
-    sorted.sort((a, b) => parseInt(a.date) - parseInt(b.date));
+    sorted.sort((a, b) => parseYearOrDate(a.date) - parseYearOrDate(b.date));
   } else if (sortValue === 'alpha') {
     sorted.sort((a, b) => a.title.localeCompare(b.title));
   }
@@ -150,7 +158,7 @@ function applySortingAndRender() {
   renderCards(sorted);
 }
 
-// Отрисовка карточек
+// Отрисовка карточек фильмов с оверлеем и кнопками
 function renderCards(list) {
   if (!container) return;
   container.innerHTML = '';
@@ -167,7 +175,16 @@ function renderCards(list) {
     const card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = `
-      <img src="${item.poster}" alt="${item.title}">
+      <div class="card-img-wrap">
+        <img src="${item.poster}" alt="${item.title}">
+        <div class="card-overlay">
+          <p class="card-description">${item.description || 'Описание отсутствует.'}</p>
+          <div class="card-links">
+            <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="link-btn imdb-btn">IMDb</a>
+            <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(item.title + ' трейлер')}" target="_blank" rel="noopener noreferrer" class="link-btn trailer-btn">Трейлер</a>
+          </div>
+        </div>
+      </div>
       <div class="card-info">
         <h3>${item.title}</h3>
         <p>${item.date} | ${item.type} | ⭐ ${item.rating}</p>
@@ -180,7 +197,7 @@ function renderCards(list) {
   });
 }
 
-// Смена языка
+// Языковые переводы
 function setLanguage(lang) {
   currentLang = lang;
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -197,7 +214,7 @@ function setLanguage(lang) {
   });
 }
 
-// Вызов загрузки при изменении фильтров
+// Обновление запроса по выбору параметров
 function triggerFetch() {
   const cat = categorySelect ? categorySelect.value : 'marvel';
   const query = (searchInput && searchInput.value.trim()) || CATEGORY_QUERIES[cat] || 'Marvel';
@@ -205,14 +222,14 @@ function triggerFetch() {
   fetchMovies(query, type, cat);
 }
 
-// Избранное
+// Отрисовка Избранного
 function renderFavorites() {
   const favorites = JSON.parse(localStorage.getItem('fav_movies') || '[]');
   const favItems = moviesData.filter(m => favorites.includes(m.id));
   renderCards(favItems);
 }
 
-// Слушатели событий
+// Обработчики событий
 if (searchInput) {
   searchInput.addEventListener('input', (e) => {
     const val = e.target.value.trim();
@@ -265,7 +282,7 @@ if (container) {
   });
 }
 
-// Пользовательское соглашение
+// Соглашение о конфиденциальности
 if (termsBanner && !localStorage.getItem('terms_accepted')) {
   termsBanner.classList.remove('hidden');
 }
@@ -281,6 +298,6 @@ if (langSelect) {
   langSelect.addEventListener('change', (e) => setLanguage(e.target.value));
 }
 
-// Стартовый запуск
+// Стартовый вызов
 startCountdown();
 fetchMovies('Marvel', 'all', 'marvel');
