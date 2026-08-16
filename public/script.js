@@ -8,7 +8,7 @@ OneSignalDeferred.push(async function(OneSignal) {
 
 // Ключевые запросы для вселенных
 const CATEGORY_QUERIES = {
-  marvel: 'Avengers',
+  marvel: 'Marvel',
   dc: 'Batman',
   sts: 'Kitchen',
   tnt: 'Interns'
@@ -75,7 +75,7 @@ const translations = {
 let currentLang = 'ru';
 let moviesData = [];
 
-// DOM Элементы
+// DOM элементы
 const searchInput = document.getElementById('search');
 const typeSelect = document.getElementById('type');
 const categorySelect = document.getElementById('category');
@@ -94,6 +94,8 @@ function startCountdown() {
     const now = new Date().getTime();
     const diff = targetDate - now;
 
+    if (!countdownBanner) return;
+
     if (diff <= 0) {
       countdownBanner.textContent = 'Премьера состоялась!';
       return;
@@ -109,31 +111,50 @@ function startCountdown() {
   }, 1000);
 }
 
-// Запрос к бэкенду Render
-async function fetchMovies(query = 'Avengers', type = 'all') {
+// Запрос к бэкенду
+async function fetchMovies(query = 'Marvel', type = 'all', category = 'marvel') {
   try {
     let url = `/api/movies?s=${encodeURIComponent(query)}`;
-    if (type !== 'all') url += `&type=${type}`;
+    if (type && type !== 'all') url += `&type=${type}`;
+    if (category) url += `&category=${category}`;
 
     const res = await fetch(url);
     const data = await res.json();
 
-    if (data.Response === 'True') {
-      moviesData = data.Search;
-      renderCards(moviesData);
+    if (data.items && data.items.length > 0) {
+      moviesData = data.items;
+      applySortingAndRender();
     } else {
       moviesData = [];
-      container.innerHTML = `<p class="empty-msg">${translations[currentLang].notFound}</p>`;
+      if (container) container.innerHTML = `<p class="empty-msg">${translations[currentLang].notFound}</p>`;
     }
   } catch (err) {
     console.error('Ошибка загрузки данных:', err);
-    container.innerHTML = `<p class="empty-msg">${translations[currentLang].notFound}</p>`;
+    if (container) container.innerHTML = `<p class="empty-msg">${translations[currentLang].notFound}</p>`;
   }
+}
+
+// Сортировка данных
+function applySortingAndRender() {
+  let sorted = [...moviesData];
+  const sortValue = sortSelect ? sortSelect.value : 'newest';
+
+  if (sortValue === 'newest') {
+    sorted.sort((a, b) => parseInt(b.date) - parseInt(a.date));
+  } else if (sortValue === 'oldest') {
+    sorted.sort((a, b) => parseInt(a.date) - parseInt(b.date));
+  } else if (sortValue === 'alpha') {
+    sorted.sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  renderCards(sorted);
 }
 
 // Отрисовка карточек
 function renderCards(list) {
+  if (!container) return;
   container.innerHTML = '';
+
   if (!list || list.length === 0) {
     container.innerHTML = `<p class="empty-msg">${translations[currentLang].notFound}</p>`;
     return;
@@ -142,15 +163,15 @@ function renderCards(list) {
   const favorites = JSON.parse(localStorage.getItem('fav_movies') || '[]');
 
   list.forEach(item => {
-    const isFav = favorites.includes(item.imdbID);
+    const isFav = favorites.includes(item.id);
     const card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = `
-      <img src="${item.Poster !== 'N/A' ? item.Poster : 'avatar.png'}" alt="${item.Title}">
+      <img src="${item.poster}" alt="${item.title}">
       <div class="card-info">
-        <h3>${item.Title}</h3>
-        <p>${item.Year} | ${item.Type}</p>
-        <button class="fav-btn ${isFav ? 'active' : ''}" data-id="${item.imdbID}">
+        <h3>${item.title}</h3>
+        <p>${item.date} | ${item.type} | ⭐ ${item.rating}</p>
+        <button class="fav-btn ${isFav ? 'active' : ''}" data-id="${item.id}">
           ${isFav ? '★' : '☆'}
         </button>
       </div>
@@ -159,72 +180,107 @@ function renderCards(list) {
   });
 }
 
-// Переключение языка
+// Смена языка
 function setLanguage(lang) {
   currentLang = lang;
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
-    if (translations[lang][key]) el.innerHTML = translations[lang][key];
+    if (translations[lang] && translations[lang][key]) {
+      el.innerHTML = translations[lang][key];
+    }
   });
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
     const key = el.getAttribute('data-i18n-placeholder');
-    if (translations[lang][key]) el.placeholder = translations[lang][key];
+    if (translations[lang] && translations[lang][key]) {
+      el.placeholder = translations[lang][key];
+    }
   });
 }
 
-// Обработчики событий
-searchInput.addEventListener('input', (e) => {
-  const val = e.target.value.trim();
-  if (val.length > 2) fetchMovies(val, typeSelect.value);
-});
+// Вызов загрузки при изменении фильтров
+function triggerFetch() {
+  const cat = categorySelect ? categorySelect.value : 'marvel';
+  const query = (searchInput && searchInput.value.trim()) || CATEGORY_QUERIES[cat] || 'Marvel';
+  const type = typeSelect ? typeSelect.value : 'all';
+  fetchMovies(query, type, cat);
+}
 
-typeSelect.addEventListener('change', () => {
-  const query = searchInput.value.trim() || CATEGORY_QUERIES[categorySelect.value] || 'Avengers';
-  fetchMovies(query, typeSelect.value);
-});
+// Избранное
+function renderFavorites() {
+  const favorites = JSON.parse(localStorage.getItem('fav_movies') || '[]');
+  const favItems = moviesData.filter(m => favorites.includes(m.id));
+  renderCards(favItems);
+}
 
-categorySelect.addEventListener('change', (e) => {
-  const cat = e.target.value;
-  if (cat === 'favorites') {
-    // Отображение сохраненных фильмов
-    const favorites = JSON.parse(localStorage.getItem('fav_movies') || '[]');
-    container.innerHTML = favorites.length ? '' : `<p class="empty-msg">${translations[currentLang].notFound}</p>`;
-  } else if (CATEGORY_QUERIES[cat]) {
-    fetchMovies(CATEGORY_QUERIES[cat], typeSelect.value);
-  } else {
-    fetchMovies('Avengers', typeSelect.value);
-  }
-});
-
-// Добавление в избранное
-container.addEventListener('click', (e) => {
-  if (e.target.classList.contains('fav-btn')) {
-    const id = e.target.getAttribute('data-id');
-    let favorites = JSON.parse(localStorage.getItem('fav_movies') || '[]');
-    
-    if (favorites.includes(id)) {
-      favorites = favorites.filter(favId => favId !== id);
-    } else {
-      favorites.push(id);
+// Слушатели событий
+if (searchInput) {
+  searchInput.addEventListener('input', (e) => {
+    const val = e.target.value.trim();
+    if (val.length > 2) {
+      const typeVal = typeSelect ? typeSelect.value : 'all';
+      const catVal = categorySelect ? categorySelect.value : 'marvel';
+      fetchMovies(val, typeVal, catVal);
     }
-    
-    localStorage.setItem('fav_movies', JSON.stringify(favorites));
-    renderCards(moviesData);
-  }
-});
+  });
+}
 
-// Соглашение
-if (!localStorage.getItem('terms_accepted')) {
+if (typeSelect) {
+  typeSelect.addEventListener('change', triggerFetch);
+}
+
+if (categorySelect) {
+  categorySelect.addEventListener('change', (e) => {
+    if (e.target.value === 'favorites') {
+      renderFavorites();
+    } else {
+      triggerFetch();
+    }
+  });
+}
+
+if (sortSelect) {
+  sortSelect.addEventListener('change', applySortingAndRender);
+}
+
+if (container) {
+  container.addEventListener('click', (e) => {
+    if (e.target.classList.contains('fav-btn')) {
+      const id = e.target.getAttribute('data-id');
+      let favorites = JSON.parse(localStorage.getItem('fav_movies') || '[]');
+      
+      if (favorites.includes(id)) {
+        favorites = favorites.filter(favId => favId !== id);
+      } else {
+        favorites.push(id);
+      }
+      
+      localStorage.setItem('fav_movies', JSON.stringify(favorites));
+      
+      if (categorySelect && categorySelect.value === 'favorites') {
+        renderFavorites();
+      } else {
+        applySortingAndRender();
+      }
+    }
+  });
+}
+
+// Пользовательское соглашение
+if (termsBanner && !localStorage.getItem('terms_accepted')) {
   termsBanner.classList.remove('hidden');
 }
 
-acceptTermsBtn.addEventListener('click', () => {
-  localStorage.setItem('terms_accepted', 'true');
-  termsBanner.classList.add('hidden');
-});
+if (acceptTermsBtn) {
+  acceptTermsBtn.addEventListener('click', () => {
+    localStorage.setItem('terms_accepted', 'true');
+    if (termsBanner) termsBanner.classList.add('hidden');
+  });
+}
 
-langSelect.addEventListener('change', (e) => setLanguage(e.target.value));
+if (langSelect) {
+  langSelect.addEventListener('change', (e) => setLanguage(e.target.value));
+}
 
-// Инициализация при старте
+// Стартовый запуск
 startCountdown();
-fetchMovies('Avengers');
+fetchMovies('Marvel', 'all', 'marvel');
